@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Phát hiện Té ngã</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
+        input[type="file"], button {
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #webcamFeed, #processedFeed {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+        .warning {
+            color: red;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phát hiện Té ngã Thời gian thực</h1>
+        <div class="section">
+            <h3>Tải lên Video</h3>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept="video/*" required>
+                <button type="submit">Xử lý Video</button>
+            </form>
+        </div>
+        <div class="section">
+            <h3>Webcam Thời gian thực</h3>
+            <button onclick="startWebcam()">Bắt đầu Webcam</button>
+            <button onclick="stopWebcam()" disabled>Ngừng Webcam</button>
+            <br>
+            <video id="webcamFeed" autoplay style="display:none;"></video>
+            <img id="processedFeed" style="display:none;">
+            <div id="warning" class="warning"></div>
+        </div>
+        <audio id="alertSound" src="/static/alert.wav"></audio>
+    </div>
+    <script>
+        let stream = null;
+        const webcamFeed = document.getElementById('webcamFeed');
+        const processedFeed = document.getElementById('processedFeed');
+        const warning = document.getElementById('warning');
+        const alertSound = document.getElementById('alertSound');
+        const startButton = document.querySelector('button[onclick="startWebcam()"]');
+        const stopButton = document.querySelector('button[onclick="stopWebcam()"]');
+
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                webcamFeed.srcObject = stream;
+                webcamFeed.style.display = 'block';
+                processedFeed.style.display = 'block';
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                processWebcam();
+            } catch (err) {
+                alert('Lỗi khi truy cập webcam: ' + err.message);
+            }
+        }
+
+        function stopWebcam() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                webcamFeed.style.display = 'none';
+                processedFeed.style.display = 'none';
+                warning.textContent = '';
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            }
+        }
+
+        function processWebcam() {
+            if (!stream) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = webcamFeed.videoWidth;
+            canvas.height = webcamFeed.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(webcamFeed, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            fetch('/webcam', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                processedFeed.src = data.image;
+                warning.textContent = data.fall_detected ? 'PHÁT HIỆN TÉ NGÃ' : '';
+                if (data.fall_detected) {
+                    alertSound.play().catch(err => console.error('Lỗi phát âm thanh:', err));
+                }
+                setTimeout(processWebcam, 100);
+            })
+            .catch(err => console.error('Lỗi xử lý:', err));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả Phát hiện Té ngã</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
+        video {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        .warning {
+            color: red;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        a {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kết quả Phát hiện Té ngã</h1>
+        {% if fall_detected %}
+            <div class="warning">PHÁT HIỆN TÉ NGÃ</div>
+            <audio id="alertSound" src="/static/alert.wav" autoplay></audio>
+        {% else %}
+            <div>Không phát hiện té ngã</div>
+        {% endif %}
+        <video controls>
+            <source src="{{ video_url }}" type="video/mp4">
+            Trình duyệt của bạn không hỗ trợ thẻ video.
+        </video>
+        <br>
+        <a href="/">Quay lại</a>
+    </div>
+</body>
+</html>
